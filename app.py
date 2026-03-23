@@ -125,7 +125,11 @@ if st.sidebar.button("Fetch from URL"):
     if log_url:
         try:
             import requests
-            response = requests.get(log_url, timeout=5)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            }
+            response = requests.get(log_url, headers=headers, timeout=5)
             response.raise_for_status()
             
             # Check if it's an HTML page rather than a raw log file
