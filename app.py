@@ -15,7 +15,8 @@ def get_shared_state():
     return {
         "logs": [],
         "last_position": 0,
-        "observer": None
+        "observer": None,
+        "sim_thread": None
     }
 
 state = get_shared_state()
@@ -89,14 +90,21 @@ def start_observer():
         # Do an initial read
         read_new_logs()
 
-@st.cache_resource
 def start_background_simulator():
     import threading
     import logger_sim
+    logger_sim.is_running = True
     # Run the simulator's main block in a background daemon thread
     thread = threading.Thread(target=logger_sim.main, daemon=True)
     thread.start()
-    return thread
+    
+    # Store thread in state so we don't recreate the cache, we recreate the thread dynamically
+    state["sim_thread"] = thread
+
+def stop_background_simulator():
+    import logger_sim
+    logger_sim.is_running = False
+    state["sim_thread"] = None
 
 # UI Setup
 st.title("Real-Time Security Log Visualizer")
@@ -110,9 +118,15 @@ st.sidebar.header("Data Sources")
 
 st.sidebar.subheader("1. Live Mock Simulator")
 st.sidebar.write("If running on Streamlit Cloud, start the background simulator to generate test logs on the fly.")
-if st.sidebar.button("Start Log Simulator"):
-    start_background_simulator()
-    st.sidebar.success("Simulator started in the background!")
+
+if state["sim_thread"] and state["sim_thread"].is_alive():
+    if st.sidebar.button("🛑 Stop Log Simulator"):
+        stop_background_simulator()
+        st.sidebar.warning("Simulator stopped!")
+else:
+    if st.sidebar.button("🚀 Start Log Simulator"):
+        start_background_simulator()
+        st.sidebar.success("Simulator started in the background!")
 
 st.sidebar.subheader("2. Upload Log File")
 uploaded_file = st.sidebar.file_uploader("Upload a local .log or .txt file", type=["log", "txt"])

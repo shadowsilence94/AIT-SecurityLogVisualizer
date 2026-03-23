@@ -13,6 +13,8 @@ IPS = [
     "10.10.10.10"
 ]
 
+is_running = True
+
 def generate_log():
     ip = random.choice(IPS)
     
@@ -34,19 +36,29 @@ def generate_log():
     return log_line
 
 def main():
+    global is_running
+    is_running = True
     print(f"Starting log simulator. Writing to '{LOG_FILE}'...")
     print("Press Ctrl+C to stop.")
     try:
-        while True:
+        while is_running:
             log_line = generate_log()
             # Append log to file
             with open(LOG_FILE, "a") as f:
                 f.write(log_line)
             print(f"Appended: {log_line.strip()}")
-            # Wait a random short interval before the next log
-            time.sleep(random.uniform(0.5, 2.5))
+            
+            # Sleep in short chunks so it can be interrupted instantly
+            sleep_duration = random.uniform(0.5, 2.5)
+            iterations = int(sleep_duration / 0.1)
+            for _ in range(iterations):
+                if not is_running:
+                    break
+                time.sleep(0.1)
     except KeyboardInterrupt:
-        print("\nSimulator stopped.")
+        print("\nSimulator stopped (Keyboard Interrupt).")
+    
+    print("Simulator thread terminated.")
 
 if __name__ == "__main__":
     main()
