@@ -2,13 +2,3 @@
 __pycache__/
 *.pyc
 access.log
-
-# Presentation and Report files
-*.tex
-*.pdf
-*.pptx
-~$*.pptx
-*.aux
-*.log
-*.out
-generate_presentation.py
