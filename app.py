@@ -127,10 +127,16 @@ if st.sidebar.button("Fetch from URL"):
             import requests
             response = requests.get(log_url, timeout=5)
             response.raise_for_status()
-            lines = response.text.split('\n')
-            parsed = parse_log_lines(lines)
-            state["logs"].extend(parsed)
-            st.sidebar.success(f"Successfully processed {len(parsed)} lines from URL.")
+            
+            # Check if it's an HTML page rather than a raw log file
+            content_type = response.headers.get('Content-Type', '')
+            if 'text/html' in content_type or response.text.strip().lower().startswith('<!doctype html>') or response.text.strip().lower().startswith('<html'):
+                st.sidebar.error("Error: The URL returned an HTML webpage. Please provide a direct link to a raw log file.")
+            else:
+                lines = response.text.split('\n')
+                parsed = parse_log_lines(lines)
+                state["logs"].extend(parsed)
+                st.sidebar.success(f"Successfully processed {len(parsed)} lines from URL.")
         except Exception as e:
             st.sidebar.error(f"Error fetching logs from URL: {e}")
 
