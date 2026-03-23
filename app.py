@@ -144,7 +144,11 @@ st.sidebar.markdown("---")
 st.sidebar.header("Actions")
 if st.sidebar.button("Clear All Logs"):
     state["logs"].clear()
-    st.sidebar.success("Logs cleared successfully!")
+    state["last_position"] = 0
+    if os.path.exists(LOG_FILE):
+        # Clean out the underlying file so it doesn't reload on restart
+        open(LOG_FILE, 'w').close()
+    st.sidebar.success("Logs and internal memory cleared successfully!")
 
 # Start background file observer
 start_observer()
