@@ -11,3 +11,4 @@ access.log
 *.aux
 *.log
 *.out
+generate_presentation.py

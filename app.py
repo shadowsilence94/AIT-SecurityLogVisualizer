@@ -72,8 +72,24 @@ def start_observer():
         # Do an initial read
         read_new_logs()
 
+@st.cache_resource
+def start_background_simulator():
+    import threading
+    import logger_sim
+    # Run the simulator's main block in a background daemon thread
+    thread = threading.Thread(target=logger_sim.main, daemon=True)
+    thread.start()
+    return thread
+
 # UI Setup
 st.title("🛡️ Real-Time Security Log Visualizer")
+
+# Sidebar for Deployment Controls
+st.sidebar.header("Control Panel")
+st.sidebar.write("If running on Streamlit Cloud, you need to start the simulator to generate mock logs.")
+if st.sidebar.button("🚀 Start Log Simulator"):
+    start_background_simulator()
+    st.sidebar.success("Simulator started in the background!")
 
 # Start background file observer
 start_observer()
