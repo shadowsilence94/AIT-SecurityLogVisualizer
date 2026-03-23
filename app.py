@@ -91,14 +91,14 @@ def start_background_simulator():
     return thread
 
 # UI Setup
-st.title("🛡️ Real-Time Security Log Visualizer")
+st.title("Real-Time Security Log Visualizer")
 
 # Sidebar for Deployment Controls and Data Sources
-st.sidebar.header("📁 Data Sources")
+st.sidebar.header("Data Sources")
 
 st.sidebar.subheader("1. Live Mock Simulator")
 st.sidebar.write("If running on Streamlit Cloud, start the background simulator to generate test logs on the fly.")
-if st.sidebar.button("🚀 Start Log Simulator"):
+if st.sidebar.button("Start Log Simulator"):
     start_background_simulator()
     st.sidebar.success("Simulator started in the background!")
 
@@ -157,7 +157,7 @@ else:
     # Alerts
     if brute_force_ips:
         for ip in brute_force_ips:
-            st.error(f"🚨 **Brute Force Alert:** IP address **{ip}** has more than 5 failed login attempts!")
+            st.error(f"Brute Force Alert: IP address **{ip}** has more than 5 failed login attempts!")
             
     col1, col2 = st.columns([1, 2])
     
