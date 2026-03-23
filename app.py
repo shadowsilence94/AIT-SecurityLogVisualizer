@@ -126,6 +126,12 @@ if st.sidebar.button("Fetch from URL"):
         except Exception as e:
             st.sidebar.error(f"Error fetching logs from URL: {e}")
 
+st.sidebar.markdown("---")
+st.sidebar.header("Actions")
+if st.sidebar.button("Clear All Logs"):
+    state["logs"].clear()
+    st.sidebar.success("Logs cleared successfully!")
+
 # Start background file observer
 start_observer()
 
