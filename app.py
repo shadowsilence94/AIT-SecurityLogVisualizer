@@ -33,7 +33,7 @@ def parse_log_lines(lines):
         if len(parts) >= 3:
             timestamp_str = parts[0]
             ip = parts[1]
-            status = parts[2]
+            status = " - ".join(parts[2:]) # Support extra dashes in messages
             
             try:
                 dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
@@ -47,6 +47,14 @@ def parse_log_lines(lines):
                 "IP Address": ip,
                 "Status": status,
                 "Off_Hours": off_hours
+            })
+        else:
+            # Fallback for unrecognized line formats (like HTML, CSV, or pure JSON)
+            new_logs.append({
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "IP Address": "Unknown",
+                "Status": ("Raw: " + line[:150]) if len(line) > 150 else ("Raw: " + line),
+                "Off_Hours": False
             })
     return new_logs 
 
@@ -143,12 +151,16 @@ if not state["logs"]:
 else:
     df = pd.DataFrame(state["logs"])
     
-    # 1. Total Attacks Detected (Failed Logins)
-    failed_logs = df[df["Status"] == "Failed Login"]
+    # Generic matching for failure conditions instead of exact "Failed Login"
+    failed_condition = df["Status"].str.contains("Fail|Error|invalid|unauthorized|blocked", case=False, na=False)
+    
+    # 1. Total Attacks Detected
+    failed_logs = df[failed_condition]
     total_attacks = len(failed_logs)
     
-    # 2. Brute Force Detection (IP > 5 Failed logins)
-    failed_counts = failed_logs["IP Address"].value_counts()
+    # 2. Brute Force Detection (IP > 5 Failed logins, excluding Unknown IPs)
+    filtered_failed_logs = failed_logs[failed_logs["IP Address"] != "Unknown"]
+    failed_counts = filtered_failed_logs["IP Address"].value_counts()
     brute_force_ips = failed_counts[failed_counts > 5].index.tolist()
     
     # 3. Off-Hours Detection
@@ -178,7 +190,8 @@ else:
         # Enhance DataFrame for display
         display_df = df.copy()
         display_df["Threat Level"] = "Normal"
-        display_df.loc[display_df["Status"] == "Failed Login", "Threat Level"] = "Elevated (Failed Login)"
+        display_df.loc[failed_condition, "Threat Level"] = "Elevated (Failed)"
+        display_df.loc[display_df["Status"].str.startswith("Raw:"), "Threat Level"] = "Unparsed"
         display_df.loc[display_df["IP Address"].isin(brute_force_ips), "Threat Level"] = "Critical (Brute Force)"
         display_df.loc[display_df["Off_Hours"] == True, "Threat Level"] = display_df["Threat Level"] + " & Off-Hours"
         
