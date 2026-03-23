@@ -100,6 +100,10 @@ def start_background_simulator():
 
 # UI Setup
 st.title("Real-Time Security Log Visualizer")
+st.markdown("**Team Members:**")
+st.markdown("- 125998 - Mr. Subhajit Ghosh")
+st.markdown("- 126010 - Mr. Htut Ko Ko")
+st.markdown("---")
 
 # Sidebar for Deployment Controls and Data Sources
 st.sidebar.header("Data Sources")
