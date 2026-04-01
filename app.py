@@ -5,6 +5,7 @@ import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from datetime import datetime
+import plotly.express as px
 
 LOG_FILE = "access.log"
 
