@@ -210,29 +210,101 @@ else:
         for ip in brute_force_ips:
             st.error(f"Brute Force Alert: IP address **{ip}** has more than 5 failed login attempts!")
             
-    col1, col2 = st.columns([1, 2])
+    st.markdown("---")
     
-    with col1:
-        # Chart: Login Status
-        st.subheader("Login Status Distribution")
-        status_counts = df["Status"].value_counts().reset_index()
-        status_counts.columns = ["Status", "Count"]
-        st.bar_chart(data=status_counts, x="Status", y="Count", use_container_width=True)
+    # NEW INTERACTIVE SECTION
+    st.subheader("🕵️ Interactive Analysis")
     
-    with col2:
-        # Enhance DataFrame for display
-        display_df = df.copy()
-        display_df["Threat Level"] = "Normal"
-        display_df.loc[failed_condition, "Threat Level"] = "Elevated (Failed)"
-        display_df.loc[display_df["Status"].str.startswith("Raw:"), "Threat Level"] = "Unparsed"
-        display_df.loc[display_df["IP Address"].isin(brute_force_ips), "Threat Level"] = "Critical (Brute Force)"
-        display_df.loc[display_df["Off_Hours"] == True, "Threat Level"] = display_df["Threat Level"] + " & Off-Hours"
-        
-        # Table
+    # Filters
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        search_ip = st.text_input("🔍 Filter by IP Address (leave blank for all):")
+    with col_f2:
+        threat_filter = st.multiselect(
+            "⚠️ Filter by Threat Level:", 
+            ["Normal", "Elevated (Failed)", "Critical (Brute Force)", "Unparsed", "Normal & Off-Hours", "Elevated (Failed) & Off-Hours", "Critical (Brute Force) & Off-Hours"], 
+            default=[]
+        )
+
+    # Enhance DataFrame for display
+    display_df = df.copy()
+    display_df["Threat Level"] = "Normal"
+    display_df.loc[failed_condition, "Threat Level"] = "Elevated (Failed)"
+    display_df.loc[display_df["Status"].astype(str).str.startswith("Raw:"), "Threat Level"] = "Unparsed"
+    display_df.loc[display_df["IP Address"].isin(brute_force_ips), "Threat Level"] = "Critical (Brute Force)"
+    display_df.loc[display_df["Off_Hours"] == True, "Threat Level"] = display_df["Threat Level"] + " & Off-Hours"
+
+    # Apply Filters
+    if search_ip:
+        display_df = display_df[display_df["IP Address"].astype(str).str.contains(search_ip, case=False, na=False)]
+    if threat_filter:
+        display_df = display_df[display_df["Threat Level"].isin(threat_filter)]
+
+    tab1, tab2 = st.tabs(["📊 Visual Highlights", "📄 Detailed Log Table"])
+
+    with tab1:
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            st.subheader("Threat Level Distribution")
+            if not display_df.empty:
+                threat_counts = display_df["Threat Level"].value_counts().reset_index()
+                threat_counts.columns = ["Threat Level", "Count"]
+                
+                # Interactive Pie Chart
+                fig_pie = px.pie(
+                    threat_counts, 
+                    names="Threat Level", 
+                    values="Count", 
+                    hole=0.4,
+                    color="Threat Level",
+                    color_discrete_map={
+                        "Normal": "#28a745",
+                        "Normal & Off-Hours": "#20c997",
+                        "Elevated (Failed)": "#ffc107",
+                        "Elevated (Failed) & Off-Hours": "#fd7e14",
+                        "Critical (Brute Force)": "#dc3545",
+                        "Critical (Brute Force) & Off-Hours": "#842029",
+                        "Unparsed": "#6c757d",
+                        "Unparsed & Off-Hours": "#5c636a"
+                    }
+                )
+                fig_pie.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+                st.plotly_chart(fig_pie, use_container_width=True)
+            else:
+                st.write("No data matches the current filters.")
+
+        with col_c2:
+            st.subheader("Top IP Sources")
+            if not display_df.empty:
+                ip_counts = display_df["IP Address"].value_counts().head(10).reset_index()
+                ip_counts.columns = ["IP Address", "Count"]
+                
+                # Interactive Bar Chart
+                fig_bar = px.bar(
+                    ip_counts, 
+                    x="IP Address", 
+                    y="Count", 
+                    color="Count", 
+                    color_continuous_scale="Reds",
+                    text="Count"
+                )
+                fig_bar.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+                st.plotly_chart(fig_bar, use_container_width=True)
+            else:
+                st.write("No data matches the current filters.")
+
+    with tab2:
         st.subheader("Live Access Logs")
-        # Sort descending by dropping index, just reversing
-        st.dataframe(display_df.iloc[::-1], use_container_width=True, height=400)
+        if not display_df.empty:
+            st.dataframe(display_df.iloc[::-1].reset_index(drop=True), use_container_width=True, height=400)
+        else:
+            st.write("No data matches the current filters.")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("Dashboard Logic")
+auto_refresh = st.sidebar.checkbox("🔄 Auto-Refresh Dashboard", value=True, help="Disable to prevent the dashboard from reloading while you inspect the charts or tables.")
 
 # Auto-refresh interval (reruns the app every 2 seconds to pick up new logs)
-time.sleep(2)
-st.rerun()
+if auto_refresh:
+    time.sleep(2)
+    st.rerun()
